@@ -196,7 +196,7 @@ protected:
   std::vector<std::reference_wrapper<hardware_interface::LoanedStateInterface>>
     m_joint_state_pos_handles;
 
-private:
+protected:
   /**
      * @brief Stop joint motion when in velocity control
      */
