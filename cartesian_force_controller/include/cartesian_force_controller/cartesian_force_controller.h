@@ -113,6 +113,7 @@ private:
   ctrl::Vector6D m_target_wrench;
   ctrl::Vector6D m_ft_sensor_wrench;
   std::string m_ft_sensor_ref_link;
+  std::string m_ft_sensor_node_name;
   KDL::Frame m_ft_sensor_transform;
 
   /**
