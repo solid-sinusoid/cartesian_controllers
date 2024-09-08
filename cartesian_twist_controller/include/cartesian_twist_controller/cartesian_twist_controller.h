@@ -45,10 +45,10 @@
 
 #include <controller_interface/controller_interface.hpp>
 
-#include "realtime_tools/realtime_buffer.h"
 #include "geometry_msgs/msg/pose_stamped.hpp"
 #include "rcl_interfaces/msg/set_parameters_result.hpp"
 #include "rclcpp/rclcpp.hpp"
+#include "realtime_tools/realtime_buffer.h"
 
 namespace cartesian_twist_controller
 {
@@ -124,14 +124,15 @@ protected:
      */
   WrenchTolerances wrench_tolerances_;
   std::string m_wrench_topic_ = "";
-  realtime_tools::RealtimeBuffer<std::shared_ptr<geometry_msgs::msg::WrenchStamped>> rt_wrench_stamped_;
-  rclcpp::Subscription<geometry_msgs::msg::WrenchStamped>::SharedPtr wrench_subscriber_ =
-    nullptr;
+  realtime_tools::RealtimeBuffer<std::shared_ptr<geometry_msgs::msg::WrenchStamped>>
+    rt_wrench_stamped_;
+  rclcpp::Subscription<geometry_msgs::msg::WrenchStamped>::SharedPtr wrench_subscriber_ = nullptr;
 
   rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr callback_handle_;
-  bool check_wrench_threshold(const rclcpp::Time & time);
+  bool checkWrenchThreshold(const rclcpp::Time & time);
   void updateWrenchFromParams();
-  rcl_interfaces::msg::SetParametersResult parametersCallback(const std::vector<rclcpp::Parameter> &parameters);
+  rcl_interfaces::msg::SetParametersResult parametersCallback(
+    const std::vector<rclcpp::Parameter> & parameters);
 
   ctrl::Vector6D m_twist;
   void twistCallback(const geometry_msgs::msg::TwistStamped::SharedPtr target);
