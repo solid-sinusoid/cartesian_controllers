@@ -51,8 +51,6 @@ namespace cartesian_twist_controller
 {
 CartesianTwistController::CartesianTwistController() : Base::CartesianControllerBase() {}
 
-#if defined CARTESIAN_CONTROLLERS_GALACTIC || defined CARTESIAN_CONTROLLERS_HUMBLE || \
-  defined CARTESIAN_CONTROLLERS_IRON
 rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn
 CartesianTwistController::on_init()
 {
@@ -75,30 +73,6 @@ CartesianTwistController::on_init()
 
   return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn::SUCCESS;
 }
-#elif defined CARTESIAN_CONTROLLERS_FOXY
-controller_interface::return_type CartesianTwistController::init(
-  const std::string & controller_name)
-{
-  const auto ret = Base::init(controller_name);
-  if (ret != controller_interface::return_type::OK)
-  {
-    return ret;
-  }
-
-  auto_declare<std::string>("wrench_threshold.topic", "");
-  auto_declare<double>("wrench_threshold.timeout", 0.0);
-  auto_declare<double>("wrench_threshold.fMag", 0.0);
-  auto_declare<double>("wrench_threshold.fx", 0.0);
-  auto_declare<double>("wrench_threshold.fy", 0.0);
-  auto_declare<double>("wrench_threshold.fz", 0.0);
-  auto_declare<double>("wrench_threshold.tMag", 0.0);
-  auto_declare<double>("wrench_threshold.tx", 0.0);
-  auto_declare<double>("wrench_threshold.ty", 0.0);
-  auto_declare<double>("wrench_threshold.tz", 0.0);
-
-  return controller_interface::return_type::OK;
-}
-#endif
 
 rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn
 CartesianTwistController::on_configure(const rclcpp_lifecycle::State & previous_state)
@@ -151,13 +125,8 @@ CartesianTwistController::on_deactivate(const rclcpp_lifecycle::State & previous
   return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn::SUCCESS;
 }
 
-#if defined CARTESIAN_CONTROLLERS_GALACTIC || defined CARTESIAN_CONTROLLERS_HUMBLE || \
-  defined CARTESIAN_CONTROLLERS_IRON
 controller_interface::return_type CartesianTwistController::update(const rclcpp::Time & time,
                                                                     const rclcpp::Duration & period)
-#elif defined CARTESIAN_CONTROLLERS_FOXY
-controller_interface::return_type CartesianTwistController::update()
-#endif
 {
   // Synchronize the internal model and the real robot
   Base::m_ik_solver->synchronizeJointPositions(Base::m_joint_state_pos_handles);
@@ -201,59 +170,59 @@ bool CartesianTwistController::check_wrench_threshold(const rclcpp::Time & time)
     }
   }
 
-  double forceSumSq = 0.0;
+  double force_sum_sq = 0.0;
   if (wrench_tolerances_.forceVec[0] != 0.0) {
     if (wrench_stamped->wrench.force.x > wrench_tolerances_.forceVec[0]) {
       RCLCPP_WARN(get_node()->get_logger(), "Wrench: Fx violation.");
       return false;
     }
   }
-  forceSumSq += wrench_stamped->wrench.force.x * wrench_stamped->wrench.force.x;
+  force_sum_sq += wrench_stamped->wrench.force.x * wrench_stamped->wrench.force.x;
   if (wrench_tolerances_.forceVec[1] != 0.0) {
     if (wrench_stamped->wrench.force.y > wrench_tolerances_.forceVec[1]) {
       RCLCPP_WARN(get_node()->get_logger(), "Wrench: Fy violation.");
       return false;
     }
   }
-  forceSumSq += wrench_stamped->wrench.force.y * wrench_stamped->wrench.force.y;
+  force_sum_sq += wrench_stamped->wrench.force.y * wrench_stamped->wrench.force.y;
   if (wrench_tolerances_.forceVec[2] != 0.0) {
     if (wrench_stamped->wrench.force.z > wrench_tolerances_.forceVec[2]) {
       RCLCPP_WARN(get_node()->get_logger(), "Wrench: Fz violation.");
       return false;
     }
   }
-  forceSumSq += wrench_stamped->wrench.force.z * wrench_stamped->wrench.force.z;
+  force_sum_sq += wrench_stamped->wrench.force.z * wrench_stamped->wrench.force.z;
   if (wrench_tolerances_.forceTotal != 0.0) {
-    if (forceSumSq > wrench_tolerances_.forceTotal*wrench_tolerances_.forceTotal) {
+    if (force_sum_sq > wrench_tolerances_.forceTotal*wrench_tolerances_.forceTotal) {
       RCLCPP_WARN(get_node()->get_logger(), "Wrench: ||F|| violation.");
       return false;
     }
   }
 
-  double torqueSumSq = 0.0;
+  double torque_sum_sq = 0.0;
   if (wrench_tolerances_.torqueVec[0] != 0.0) {
     if (wrench_stamped->wrench.torque.x > wrench_tolerances_.torqueVec[0]) {
       RCLCPP_WARN(get_node()->get_logger(), "Wrench: Tx violation.");
       return false;
     }
   }
-  torqueSumSq += wrench_stamped->wrench.torque.x * wrench_stamped->wrench.torque.x;
+  torque_sum_sq += wrench_stamped->wrench.torque.x * wrench_stamped->wrench.torque.x;
   if (wrench_tolerances_.torqueVec[1] != 0.0) {
     if (wrench_stamped->wrench.torque.y > wrench_tolerances_.torqueVec[1]) {
       RCLCPP_WARN(get_node()->get_logger(), "Wrench: Ty violation.");
       return false;
     }
   }
-  torqueSumSq += wrench_stamped->wrench.torque.y * wrench_stamped->wrench.torque.y;
+  torque_sum_sq += wrench_stamped->wrench.torque.y * wrench_stamped->wrench.torque.y;
   if (wrench_tolerances_.torqueVec[2] != 0.0) {
     if (wrench_stamped->wrench.torque.z > wrench_tolerances_.torqueVec[2]) {
       RCLCPP_WARN(get_node()->get_logger(), "Wrench: Tz violation.");
       return false;
     }
   }
-  torqueSumSq += wrench_stamped->wrench.torque.z * wrench_stamped->wrench.torque.z;
+  torque_sum_sq += wrench_stamped->wrench.torque.z * wrench_stamped->wrench.torque.z;
   if (wrench_tolerances_.torqueTotal != 0.0) {
-    if (torqueSumSq > wrench_tolerances_.torqueTotal*wrench_tolerances_.torqueTotal) {
+    if (torque_sum_sq > wrench_tolerances_.torqueTotal*wrench_tolerances_.torqueTotal) {
       RCLCPP_WARN(get_node()->get_logger(), "Wrench: ||T|| violation.");
       return false;
     }
