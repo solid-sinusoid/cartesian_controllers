@@ -95,9 +95,9 @@ public:
      * \return True, if everything went well
      */
 
-  bool init(std::shared_ptr<rclcpp_lifecycle::LifecycleNode> nh,
-    const KDL::Chain & chain, const KDL::JntArray & upper_pos_limits,
-    const KDL::JntArray & lower_pos_limits) override;
+  bool init(std::shared_ptr<rclcpp_lifecycle::LifecycleNode> nh, const KDL::Chain & chain,
+            const KDL::JntArray & upper_pos_limits,
+            const KDL::JntArray & lower_pos_limits) override;
 
 private:
   std::shared_ptr<KDL::ChainJntToJacSolver> m_jnt_jacobian_solver;
@@ -105,12 +105,7 @@ private:
   KDL::Jacobian m_jnt_jacobian;
 
   // Dynamic parameters
-#if defined CARTESIAN_CONTROLLERS_HUMBLE || defined CARTESIAN_CONTROLLERS_IRON
-  std::shared_ptr<rclcpp_lifecycle::LifecycleNode> m_handle;  ///< handle for dynamic parameter interaction
-#else
-  std::shared_ptr<rclcpp::Node> m_handle;  ///< handle for dynamic parameter interaction
-#endif
-  const std::string m_params = "solver/damped_least_squares";  ///< namespace for parameter access
+  const std::string m_params = "solver.damped_least_squares";  ///< namespace for parameter access
   double m_alpha;                                              ///< damping coefficient
 };
 

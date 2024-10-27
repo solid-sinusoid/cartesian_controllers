@@ -84,6 +84,15 @@ MotionControlHandle::on_deactivate(const rclcpp_lifecycle::State & previous_stat
 controller_interface::return_type MotionControlHandle::update(const rclcpp::Time & time,
                                                               const rclcpp::Duration & period)
 {
+  if (m_current_pose.header.frame_id != m_robot_base_link && m_current_pose.header.frame_id != "")
+  {
+    RCLCPP_ERROR(
+      get_node()->get_logger(),
+      "The reference frame \"%s\" selected in Rviz is not a fixed frame. Please select a "
+      "fixed frame.",
+      m_current_pose.header.frame_id.c_str());
+    return controller_interface::return_type::ERROR;
+  }
   // Publish marker pose
   m_current_pose.header.stamp = get_node()->now();
   m_current_pose.header.frame_id = m_robot_base_link;
@@ -114,20 +123,15 @@ controller_interface::InterfaceConfiguration MotionControlHandle::state_interfac
   return conf;
 }
 
-
 rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn
 MotionControlHandle::on_init()
 {
-
-
   auto_declare<std::string>("robot_description", "");
   auto_declare<std::string>("robot_base_link", "");
   auto_declare<std::string>("end_effector_link", "");
   auto_declare<std::vector<std::string> >("joints", std::vector<std::string>());
 
-
   return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn::SUCCESS;
-
 }
 
 rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn
@@ -137,7 +141,11 @@ MotionControlHandle::on_configure(const rclcpp_lifecycle::State & previous_state
   urdf::Model robot_model;
   KDL::Tree robot_tree;
 
+#if defined CARTESIAN_CONTROLLERS_JAZZY
+  std::string robot_description = this->get_robot_description();
+#else
   std::string robot_description = get_node()->get_parameter("robot_description").as_string();
+#endif
   if (robot_description.empty())
   {
     RCLCPP_ERROR(get_node()->get_logger(), "robot_description is empty");
@@ -230,12 +238,13 @@ void MotionControlHandle::updateMotionControlCallback(
   const visualization_msgs::msg::InteractiveMarkerFeedback::ConstSharedPtr & feedback)
 {
   // Move marker in RViz
-  m_server->setPose(feedback->marker_name, feedback->pose);
+  m_server->setPose(feedback->marker_name, feedback->pose, feedback->header);
   m_server->applyChanges();
 
   // Store for later broadcasting
   m_current_pose.pose = feedback->pose;
-  m_current_pose.header.stamp = get_node()->now();
+  m_current_pose.header.frame_id = feedback->header.frame_id;
+  m_current_pose.header.stamp = feedback->header.stamp;
 }
 
 void MotionControlHandle::updateMarkerMenuCallback(
