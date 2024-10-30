@@ -183,11 +183,7 @@ protected:
     }
   }
 
-#if defined CARTESIAN_CONTROLLERS_HUMBLE || defined CARTESIAN_CONTROLLERS_IRON
   std::shared_ptr<rclcpp_lifecycle::LifecycleNode> m_handle;
-#else
-  std::shared_ptr<rclcpp::Node> m_handle;
-#endif
 
   //! The underlying physical system
   KDL::Chain m_chain;
