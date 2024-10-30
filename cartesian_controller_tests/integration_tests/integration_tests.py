@@ -272,11 +272,15 @@ class IntegrationTest(unittest.TestCase):
         req = SetParameters.Request()
         req.parameters = params
         future = client.call_async(req)
-        rclpy.spin_until_future_complete(self.node, future)
+        rclpy.spin_until_future_complete(
+            self.node, future  # type: ignore[attr-defined]
+        )
 
     def get_parameters(self, client: Client, names: list[str]) -> Any:
         req = GetParameters.Request()
         req.names = names
         future = client.call_async(req)
-        rclpy.spin_until_future_complete(self.node, future)
+        rclpy.spin_until_future_complete(
+            self.node, future  # type: ignore[attr-defined]
+        )
         return future.result()
