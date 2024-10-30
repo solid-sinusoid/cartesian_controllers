@@ -170,6 +170,21 @@ protected:
      */
   void applyJointLimits();
 
+  template <typename ParameterT>
+  auto auto_declare(const std::string & name, const ParameterT & default_value)
+  {
+    if (!m_handle->has_parameter(name))
+    {
+      return m_handle->declare_parameter<ParameterT>(name, default_value);
+    }
+    else
+    {
+      return m_handle->get_parameter(name).get_value<ParameterT>();
+    }
+  }
+
+  std::shared_ptr<rclcpp_lifecycle::LifecycleNode> m_handle;
+
   //! The underlying physical system
   KDL::Chain m_chain;
 
