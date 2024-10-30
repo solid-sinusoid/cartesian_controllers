@@ -10,10 +10,14 @@ from launch_ros.substitutions import FindPackageShare
 import time
 import rclpy
 from rclpy.node import Node
+from rclpy.client import Client
+from rcl_interfaces.msg import Parameter, ParameterType, ParameterValue
 from controller_manager_msgs.srv import ListControllers
 from controller_manager_msgs.srv import SwitchController
 from geometry_msgs.msg import PoseStamped
 from geometry_msgs.msg import WrenchStamped
+from rcl_interfaces.srv import GetParameters, SetParameters
+from typing import Any
 
 
 def generate_test_description():
@@ -52,7 +56,6 @@ class IntegrationTest(unittest.TestCase):
     def setUpClass(cls):
         rclpy.init()
         cls.node = Node("test_startup")
-        cls.setup_interfaces(cls)
 
         cls.our_controllers = [
             "cartesian_motion_controller",
@@ -64,6 +67,8 @@ class IntegrationTest(unittest.TestCase):
             "invalid_cartesian_force_controller",
             "invalid_cartesian_compliance_controller",
         ]
+
+        cls.setup_interfaces(cls)
 
     @classmethod
     def tearDownClass(cls):
@@ -85,6 +90,20 @@ class IntegrationTest(unittest.TestCase):
         )
         if not self.switch_controller.wait_for_service(timeout.nanoseconds / 1e9):
             self.fail("Service switch_controllers not available")
+
+        self.get_parameter_clients = {
+            controller: self.node.create_client(
+                GetParameters, f"/{controller}/get_parameters"
+            )
+            for controller in self.our_controllers[0:3]
+        }
+
+        self.set_parameter_clients = {
+            controller: self.node.create_client(
+                SetParameters, f"/{controller}/set_parameters"
+            )
+            for controller in self.our_controllers[0:3]
+        }
 
         self.target_pose_pub = self.node.create_publisher(
             PoseStamped, "target_frame", 3
@@ -192,6 +211,31 @@ class IntegrationTest(unittest.TestCase):
             )
             self.stop_controller(name)
 
+    def test_solver_parameters(self):
+        """Check whether we can set and get nested solver parameters"""
+        example_param = "solver.forward_dynamics.link_mass"
+        default_value = 0.1
+        new_value = 0.7
+
+        for client in self.get_parameter_clients.values():
+            result = self.get_parameters(client, [example_param])
+            result = result.values[0].double_value
+            self.assertTrue(result == default_value)
+
+        for client in self.set_parameter_clients.values():
+            param = Parameter(
+                name=example_param,
+                value=ParameterValue(
+                    double_value=new_value, type=ParameterType.PARAMETER_DOUBLE
+                ),
+            )
+            self.set_parameters(client, [param])
+
+        for client in self.get_parameter_clients.values():
+            result = self.get_parameters(client, [example_param])
+            result = result.values[0].double_value
+            self.assertTrue(result == new_value)
+
     def check_state(self, controller, state):
         """Check the controller's state
 
@@ -223,3 +267,16 @@ class IntegrationTest(unittest.TestCase):
         req.strictness = req.BEST_EFFORT
         future = self.switch_controller.call_async(req)
         rclpy.spin_until_future_complete(self.node, future)
+
+    def set_parameters(self, client: Client, params: list[Parameter]) -> None:
+        req = SetParameters.Request()
+        req.parameters = params
+        future = client.call_async(req)
+        rclpy.spin_until_future_complete(self.node, future)
+
+    def get_parameters(self, client: Client, names: list[str]) -> Any:
+        req = GetParameters.Request()
+        req.names = names
+        future = client.call_async(req)
+        rclpy.spin_until_future_complete(self.node, future)
+        return future.result()
