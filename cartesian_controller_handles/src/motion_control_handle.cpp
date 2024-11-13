@@ -129,6 +129,7 @@ MotionControlHandle::on_init()
   auto_declare<std::string>("robot_description", "");
   auto_declare<std::string>("robot_base_link", "");
   auto_declare<std::string>("end_effector_link", "");
+  auto_declare<std::string>("controller_name", "");
   auto_declare<std::vector<std::string> >("joints", std::vector<std::string>());
 
   return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn::SUCCESS;
@@ -194,8 +195,18 @@ MotionControlHandle::on_configure(const rclcpp_lifecycle::State & previous_state
   }
 
   // Publishers
-  m_pose_publisher = get_node()->create_publisher<geometry_msgs::msg::PoseStamped>(
-    get_node()->get_name() + std::string("/target_frame"), 10);
+  if (get_node()->get_parameter("controller_name").as_string().empty())
+  {
+    m_pose_publisher = get_node()->create_publisher<geometry_msgs::msg::PoseStamped>(
+      get_node()->get_name() + std::string("/target_frame"), 10);
+  }
+  else
+  {
+    m_pose_publisher = get_node()->create_publisher<geometry_msgs::msg::PoseStamped>(
+      get_node()->get_parameter("controller_name").as_string() +
+        std::string("/target_frame"),
+      10);
+  }
 
   // Initialize kinematics
   m_fk_solver.reset(new KDL::ChainFkSolverPos_recursive(m_robot_chain));
