@@ -141,7 +141,7 @@ private:
      * @param marker The marker to add the visualization to
      * @param scale The scale of the visualization. Bounding box in meter.
      */
-  static void addMarkerVisualization(visualization_msgs::msg::InteractiveMarker & marker,
+  static void addSphereControl(visualization_msgs::msg::InteractiveMarker & marker,
                                      double scale);
 
   /**

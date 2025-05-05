@@ -48,6 +48,7 @@
 #include "rclcpp/node.hpp"
 #include "rclcpp/time.hpp"
 #include "visualization_msgs/msg/detail/interactive_marker_feedback__struct.hpp"
+#include "visualization_msgs/msg/interactive_marker_control.hpp"
 
 namespace cartesian_controller_handles
 {
@@ -203,9 +204,7 @@ MotionControlHandle::on_configure(const rclcpp_lifecycle::State & previous_state
   else
   {
     m_pose_publisher = get_node()->create_publisher<geometry_msgs::msg::PoseStamped>(
-      get_node()->get_parameter("controller_name").as_string() +
-        std::string("/target_frame"),
-      10);
+      get_node()->get_parameter("controller_name").as_string() + std::string("/target_frame"), 10);
   }
 
   // Initialize kinematics
@@ -267,7 +266,9 @@ void MotionControlHandle::prepareMarkerControls(visualization_msgs::msg::Interac
 {
   // Add colored sphere as visualization
   constexpr double marker_scale = 0.05;
-  addMarkerVisualization(marker, marker_scale);
+  addSphereControl(marker, marker_scale);
+
+
 
   // Create move and rotate controls along all axis
   addAxisControl(marker, 1, 0, 0);
@@ -275,7 +276,7 @@ void MotionControlHandle::prepareMarkerControls(visualization_msgs::msg::Interac
   addAxisControl(marker, 0, 0, 1);
 }
 
-void MotionControlHandle::addMarkerVisualization(
+void MotionControlHandle::addSphereControl(
   visualization_msgs::msg::InteractiveMarker & marker, double scale)
 {
   // Create a sphere as a handle
@@ -289,10 +290,13 @@ void MotionControlHandle::addMarkerVisualization(
   visual.color.b = 0.0;
   visual.color.a = 1.0;
 
-  // Create a non-interactive control for the appearance
   visualization_msgs::msg::InteractiveMarkerControl visual_control;
   visual_control.always_visible = true;
   visual_control.markers.push_back(visual);
+
+  // visual_control.orientation_mode = visualization_msgs::msg::InteractiveMarkerControl::VIEW_FACING;
+  visual_control.interaction_mode = visualization_msgs::msg::InteractiveMarkerControl::MOVE_ROTATE_3D;
+  visual_control.independent_marker_orientation = true;
   marker.controls.push_back(visual_control);
 }
 
